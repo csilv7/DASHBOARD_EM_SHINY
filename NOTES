@@ -1,0 +1,28 @@
+- Histogramas com variações de Bins:
+
+```
+# Novo input para bins
+      sliderInput("bins", "Número de bins:", min = 1, max = 50, value = 20),
+      
+output$idadePlot <- renderPlotly({
+    x <- bancoMoto$IDADE
+    
+    # Certifique-se de que bins seja numérico e correto
+    bins <- seq(
+      min(x, na.rm = TRUE), 
+      max(x, na.rm = TRUE), 
+      length.out = as.numeric(input$bins) + 1
+    )
+    
+    plot_gg <- ggplot(data = bancoMoto, aes(x = IDADE)) +
+      geom_histogram(breaks = bins, fill = "grey", color = "black", alpha = 0.7) +
+      labs(title = "Distribuição de Idade", 
+           x = "Idade", 
+           y = "Frequência") +
+      theme_minimal() +
+      theme(plot.title = element_text(hjust = 0.5, size = 16))
+    
+    ggplotly(plot_gg, tooltip = c("x", "y"))
+  })
+  
+```
