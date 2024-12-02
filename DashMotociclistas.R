@@ -112,7 +112,8 @@ ui = dashboardPage(
                    color: white; 
                    border-radius: 5px; 
                    padding: 10px; 
-                   font-size: 12px")
+                   font-size: 12px"),
+      tableOutput("tabela_filtrada")
     )
   ),
   
@@ -150,6 +151,7 @@ ui = dashboardPage(
                   solidHeader = TRUE,
                   collapsible = TRUE,
                   plotlyOutput("tempCNHPlot", height = 300)),
+              
               box(title = "Motivo de NÃO ser Habilitado", 
                   status = "primary", 
                   solidHeader = TRUE,
@@ -169,12 +171,19 @@ ui = dashboardPage(
 # -----------------------------
 
 server <- function(input, output, session) {
+  filtro = reactive({
+    subset(bancoMoto, MUNICÍPIO == input$municipio & CNH == input$cnh & ACIDENTE == input$acidente)
+  })
+  
   # ------------------------
   # [3.] MENU SOCIOECONÔMICO
   # ------------------------
+  # ---------
+  # [3.] SEXO
+  # ---------
   output$sexoPlot <- renderPlotly({
     ggplotly(
-      ggplot(data = bancoMoto, aes(x = SEXO)) +
+      ggplot(data = filtro(), aes(x = SEXO)) +
         geom_bar(aes(y = ..count.., fill = SEXO), color = "black") +
         labs(x = "Gênero", y = "Nº de Entrevistados") +
         theme_minimal() +
@@ -182,20 +191,34 @@ server <- function(input, output, session) {
     )
   })
   
+  # ----------
+  # [3.] IDADE
+  # ----------
   output$idadePlot = renderPlotly({
     ggplotly(
-      ggplot(data = bancoMoto, aes(x = IDADE)) +
+      ggplot(data = filtro(), aes(x = IDADE)) +
         geom_histogram(bins = 20, fill = "grey", color = "black") +
         labs(x = "Idade", y ="Frequência") +
         theme_minimal()
     )
   })
   
+  # -----------------
+  # [3.] ESCOLARIDADE
+  # -----------------
   output$escolaridadePlot <- renderPlotly({
     
     escol_organiz <- bancoMoto %>%
       count(ESCOLARIDADE, sort = TRUE) %>%
       mutate(ESCOLARIDADE = factor(ESCOLARIDADE, levels = ESCOLARIDADE))
+    
+    rotulo <- c("ENS MÉD COMP", "ENS MÉD INCOMP", 
+                "ENS SUP COMP", "ENS FUN INCOMP",
+                "ENS SUP INCOMP", "ENS FUN COMP", 
+                "NÃO PREENC", "SEM ESCOL")
+    
+    escol_organiz <- escol_organiz %>%
+      mutate(ESCOLARIDADE = factor(rotulo, levels = rotulo))
     
     ggplotly(
       ggplot(data = escol_organiz, aes(x = ESCOLARIDADE, y = n, fill = ESCOLARIDADE)) +
@@ -207,8 +230,11 @@ server <- function(input, output, session) {
     )
   })
   
+  # --------------
+  # [3.] CATEGORIA
+  # --------------
   output$CatCNHPlot = renderPlotly({
-    categ_organiz = bancoMoto %>%
+    categ_organiz = filtro() %>%
       count(CATEGORIA, sort = TRUE) %>%
       mutate(CATEGORIA = factor(CATEGORIA, levels = CATEGORIA))
     
@@ -224,10 +250,27 @@ server <- function(input, output, session) {
     )
   })
   
+  # -----------------
+  # [3.] TEMPO DE CNH
+  # -----------------
+  output$tempCNHPlot <- renderPlotly({
+    temp_organiz <- filtro() %>%
+      count(TEMPO_CNH, sort = TRUE) %>%
+      mutate(TEMPO_CNH = factor(TEMPO_CNH, levels = TEMPO_CNH))
+    
+    ggplotly(
+      ggplot(data = temp_organiz, aes(x = TEMPO_CNH, y = n, fill = TEMPO_CNH)) +
+        geom_bar(stat = "identity", color = "black") +
+        coord_flip() +
+        labs(x = "Tempo de CNH", y = "Nº de Entrevistados") +
+        theme_minimal() +
+        guides(fill = guide_legend(title = NULL))
+    )
+  })
+  
 }
 
 # ----------------------------
 # [4] Produto Final: Dashboard
 # ----------------------------
-
 shinyApp(ui, server)
