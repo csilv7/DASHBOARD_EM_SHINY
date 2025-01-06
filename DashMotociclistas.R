@@ -268,6 +268,24 @@ server <- function(input, output, session) {
     )
   })
   
+  # ---------------------------------
+  # [3.] MOTIVO DE NÃO SER HABILITADO
+  # ---------------------------------
+  output$transportePlot <- renderPlotly({
+    motivo_organiz <- filtro() %>%
+      count(MOTIVO_CNH, sort = TRUE) %>%
+      mutate(MOTIVO_CNH = factor(MOTIVO_CNH, levels = MOTIVO_CNH))
+    
+    ggplotly(
+      ggplot(data = motivo_organiz, aes(x = MOTIVO_CNH, y = n, fill = MOTIVO_CNH)) +
+        geom_bar(stat = "identity", color = "black") +
+        coord_flip() +
+        labs(x = "Motivo de não ter CNH", y = "Nº de Entrevistados") +
+        theme_minimal() +
+        guides(fill = guide_legend(title = NULL))
+    )
+  })
+  
 }
 
 # ----------------------------
